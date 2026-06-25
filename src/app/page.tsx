@@ -124,7 +124,9 @@ export default function HomePage() {
                   ? 'bg-white text-[var(--text-primary)] shadow-sm'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }`}
+            >
               Upload File
+            </button>
             <button
               onClick={() => setMode('paste')}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
@@ -132,7 +134,9 @@ export default function HomePage() {
                   ? 'bg-white text-[var(--text-primary)] shadow-sm'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }`}
+            >
               Paste Text
+            </button>
           </div>
 
           {/* Upload Zone */}

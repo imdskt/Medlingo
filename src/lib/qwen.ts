@@ -1,8 +1,32 @@
 import OpenAI from 'openai';
+import { z } from 'zod';
 
 const qwen = new OpenAI({
   apiKey: process.env.QWEN_API_KEY || '',
   baseURL: process.env.QWEN_BASE_URL || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+});
+
+// Zod schemas for validation
+const MedicalFindingSchema = z.object({
+  testName: z.string(),
+  value: z.string(),
+  normalRange: z.string().nullable(),
+  status: z.enum(['normal', 'abnormal', 'critical']),
+  explanation: z.string(),
+});
+
+const HindiTranslationSchema = z.object({
+  summary: z.string(),
+  criticalAlerts: z.array(z.string()),
+  recommendations: z.array(z.string()),
+});
+
+const AnalysisResultSchema = z.object({
+  summary: z.string(),
+  findings: z.array(MedicalFindingSchema),
+  criticalAlerts: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  hindiTranslation: HindiTranslationSchema,
 });
 
 export interface MedicalFinding {
@@ -101,15 +125,22 @@ JSON Schema:
     throw new Error('Qwen returned an empty response');
   }
 
-  let parsed: Omit<AnalysisResult, 'tokenUsage'>;
+  let parsed: unknown;
   try {
     parsed = JSON.parse(content);
   } catch {
     throw new Error(`Failed to parse Qwen response as JSON: ${content.substring(0, 200)}`);
   }
 
+  // Validate response against Zod schema
+  const validation = AnalysisResultSchema.safeParse(parsed);
+  if (!validation.success) {
+    console.error('[Qwen] Validation error:', validation.error);
+    throw new Error('AI response failed validation. The response format was incorrect.');
+  }
+
   const tokenUsage = result.usage?.total_tokens ?? 0;
   console.log(`[Qwen] Medical analysis complete. Tokens used: ${tokenUsage}`);
 
-  return { ...parsed, tokenUsage };
+  return { ...validation.data, tokenUsage };
 }
